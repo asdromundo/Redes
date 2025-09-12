@@ -59,7 +59,10 @@ def leader():
 
     next_id = incoming_id if incoming_id > ID else ID
     payload = {"id": str(next_id)}
-    requests.post(url, json=payload, timeout=3)
+    try:
+        requests.post(url, json=payload, timeout=3)
+    except requests.RequestException as e:
+        print(f"Error al enviar la solicitud: {e}")
     return jsonify({"id": str(ID), "role": HOST_ROLE.value})
 
 
