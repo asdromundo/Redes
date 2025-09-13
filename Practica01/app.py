@@ -83,15 +83,15 @@ def counter():
     if STOP:
         return jsonify({"error": "No se aceptan nuevas solicitudes"}), 400
 
-    if valor >= 50:
+    if valor >= 3:
         stop_task()
-        message = f"Proceso finalizado en {HOST_USERNAME} con valor {valor}"
-        payload = {"valor": valor, "name": HOST_USERNAME, "status": message}
+        message = f"Proceso finalizado en {name} con valor {valor}"
+        payload = {"valor": valor, "name": name, "status": message}
         url = ENDPOINT + url_for("finish")
         try:
             requests.post(url, json=payload, timeout=5)
-        except requests.RequestException as e:
-            print(f"Error al enviar la solicitud: {e}")
+        except requests.RequestException:
+            pass
         print(message)
         return payload, 200
 
@@ -110,7 +110,7 @@ def counter():
 @app.post("/api/v1/finish")
 def finish():
     if STOP:
-        return jsonify({"error": "No se aceptan nuevas solicitudes"}), 400
+        return "OK", 200
 
     data = request.get_json(force=True)
     valor = data.get("valor")
@@ -122,6 +122,12 @@ def finish():
 
     print(f"Proceso finalizado en {name} con valor {valor}")
     stop_task()
+    url = ENDPOINT + url_for("finish")
+    payload = {"valor": valor, "name": name, "status": status}
+    try:
+        requests.post(url, json=payload, timeout=3)
+    except requests.RequestException:
+        pass
     return "OK", 200
 
 
