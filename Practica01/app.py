@@ -40,8 +40,11 @@ def leader():
 
     if leader_found:
         HOST_ROLE = Role.WORKER
-        payload = {"id": incoming_id, "leaderFound": True}
-        requests.post(url, json=payload, timeout=3)
+        payload = {"id": incoming_id, "leaderFound": leader_found}
+        try:
+            requests.post(url, json=payload, timeout=3)
+        except requests.RequestException:
+            pass
         return "OK", 200
 
     incoming_id = uuid.UUID(incoming_id)
@@ -49,13 +52,16 @@ def leader():
         print("I am the leader")
         HOST_ROLE = Role.STARTER
         payload = {"id": str(ID), "leaderFound": True}
-        requests.post(url, json=payload, timeout=3)
+        try:
+            requests.post(url, json=payload, timeout=3)
+        except requests.RequestException:
+            pass
         url = ENDPOINT + url_for("counter")
-        requests.post(
-            url,
-            json={"valor": STARTING_VAL, "name": HOST_USERNAME},
-            timeout=3,
-        )
+        payload = {"valor": STARTING_VAL, "name": HOST_USERNAME}
+        try:
+            requests.post(url, json=payload, timeout=3)
+        except requests.RequestException:
+            pass
         return "OK", 200
 
     next_id = incoming_id if incoming_id > ID else ID
@@ -83,10 +89,10 @@ def counter():
     if STOP:
         return jsonify({"error": "No se aceptan nuevas solicitudes"}), 400
 
-    if valor >= 3:
+    if valor >= 50:
         stop_task()
-        message = f"Proceso finalizado en {name} con valor {valor}"
-        payload = {"valor": valor, "name": name, "status": message}
+        message = f"Proceso finalizado en {HOST_USERNAME} con valor {valor}"
+        payload = {"valor": valor, "name": HOST_USERNAME, "status": message}
         url = ENDPOINT + url_for("finish")
         try:
             requests.post(url, json=payload, timeout=5)
