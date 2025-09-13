@@ -50,8 +50,9 @@ def leader():
         HOST_ROLE = Role.STARTER
         payload = {"id": str(ID), "leaderFound": True}
         requests.post(url, json=payload, timeout=3)
+        url = ENDPOINT + url_for("counter")
         requests.post(
-            f"{ENDPOINT}/api/v1/counter",
+            url,
             json={"valor": STARTING_VAL, "name": HOST_USERNAME},
             timeout=3,
         )
@@ -61,8 +62,8 @@ def leader():
     payload = {"id": str(next_id)}
     try:
         requests.post(url, json=payload, timeout=3)
-    except requests.RequestException as e:
-        print(f"Error al enviar la solicitud: {e}")
+    except requests.RequestException:
+        pass
     return jsonify({"id": str(ID), "role": HOST_ROLE.value})
 
 
@@ -76,7 +77,6 @@ def counter():
     data = request.get_json(force=True)
     valor = data.get("valor")
     name = data.get("name")
-
     if valor is None or name is None:
         return jsonify({"error": "Faltan campos 'valor' o 'name'"}), 400
 
@@ -86,20 +86,23 @@ def counter():
     if valor >= 50:
         stop_task()
         message = f"Proceso finalizado en {HOST_USERNAME} con valor {valor}"
-        payload = {"valor": valor, "name": name, "status": message}
+        payload = {"valor": valor, "name": HOST_USERNAME, "status": message}
         url = ENDPOINT + url_for("finish")
-        requests.post(f"{url}/", json=payload, timeout=3)
+        try:
+            requests.post(url, json=payload, timeout=5)
+        except requests.RequestException as e:
+            print(f"Error al enviar la solicitud: {e}")
         print(message)
         return payload, 200
 
     else:
-        payload = {"valor": valor + 1, "name": name}
+        payload = {"valor": valor + 1, "name": HOST_USERNAME}
         url = ENDPOINT + url_for("counter")
 
     try:
-        requests.post(f"{url}/", json=payload, timeout=3)
-    except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        requests.post(url, json=payload, timeout=3)
+    except requests.RequestException:
+        pass
 
     return jsonify({"status": "OK", "forwarded": payload}), 200
 
